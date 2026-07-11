@@ -1,5 +1,5 @@
 # 💿 Ante-Millennium OS (Ante-M) x86
-# - NEWS: ora rinominato in III-Millennium OS - 
+# - NEWS: now renamed III-Millennium OS -
 ## V 0.1 Alpha - build 110
 
 ![Version](https://img.shields.io/badge/version-0.1_Alpha-blue.svg)
@@ -9,9 +9,9 @@
 <img width="870" height="616" alt="FLAT_BIANCO_NUOVISSIMO_TESTO_LOGO_DEFINITIVO_ANTE_M" src="https://github.com/user-attachments/assets/3dd02963-0615-4d2e-be62-85f315b9cc59" />
 
 
-**Ante-Millennium OS** è un sistema operativo sperimentale a 32-bit (x86) scritto interamente da zero (bare-metal) in C e Assembly. 
+**Ante-Millennium OS** is an experimental 32-bit (x86) operating system written entirely from scratch (bare-metal) in C and Assembly.
 
-Nasce come progetto di esplorazione tecnica per ricreare le complesse architetture dei sistemi operativi classici (tra cui Multitasking Preemptive, Demand Paging, Virtual File System Ext2 e Moduli Kernel Caricabili), unita a un'interfaccia grafica nativa ("Retained Mode") ispirata all'estetica iconica degli anni '90 e dei primi anni 2000. Il sistema è un ecosistema totalmente autosufficiente: non si appoggia ad alcuna libreria standard o codice di terze parti, comunica direttamente con l'hardware e include un proprio SDK (la libreria antem_libc) per lo sviluppo e la compilazione di applicazioni User-Space nel formato proprietario .edxi.
+It was born as a technical exploration project aimed at recreating the complex architectures of classic operating systems (including Preemptive Multitasking, Demand Paging, an Ext2 Virtual File System, and Loadable Kernel Modules), combined with a native graphical interface ("Retained Mode") inspired by the iconic aesthetics of the '90s and early 2000s. The system is a fully self-sufficient ecosystem: it relies on no standard library or third-party code, communicates directly with the hardware, and includes its own SDK (the antem_libc library) for developing and compiling User-Space applications in the proprietary .edxi format.
 
 
 <img width="977" height="764" alt="Screenshot 2026-06-27 alle 18 02 49" src="https://github.com/user-attachments/assets/917542ad-5370-4c9f-90d5-abe792b745ad" />
@@ -19,51 +19,51 @@ Nasce come progetto di esplorazione tecnica per ricreare le complesse architettu
 
 ---
 
-## ✨ Architettura e Novità della Build Alpha
+## ✨ Architecture and What's New in the Alpha Build
 
-L'ultima evoluzione del sistema introduce cambiamenti strutturali profondi, implementando concetti avanzati di Ingegneria dei Sistemi Operativi:
+The latest evolution of the system introduces deep structural changes, implementing advanced Operating Systems Engineering concepts:
 
-* 🖥️ **Window Manager Event-Driven e Taskbar:** Il rendering dell'interfaccia grafica avviene in memoria tramite Double-Buffering per garantire l'assenza totale di flickering. Il sistema vanta un Menu Start interattivo (protetto da logiche di Z-Ordering), una Taskbar con gestione dinamica dello spazio e icone a 16 colori. Le animazioni di chiusura e riduzione a icona sono guidate da un motore asincrono basato su Interpolazione Lineare (Lerp) agganciato al timer hardware, per traiettorie fluide e pixel-perfect. Il consumo di CPU è drasticamente ottimizzato tramite un V-Sync ibrido (50/100 FPS) e uno Scheduler intelligente che addormenta i processi in Ring 3 (Syscall Yield), risvegliando rigorosamente solo l'applicazione con il focus attivo nel momento esatto dell'input utente. Le finestre supportano inoltre il ridimensionamento Content-Aware, adattando i propri limiti all'interfaccia interna.
-* 🛡️ **Ring 3, Paging e Demand Paging:** Le applicazioni operano in totale isolamento nello User Mode (Ring 3), protette da un'architettura di memoria virtuale avanzata. Il sistema implementa un Physical Frame Allocator (PFA) basato su bitmap per la gestione di RAM fisica fino a 1 GB. Invece di allocazioni statiche, il Kernel utilizza il Demand Paging: la memoria viene mappata dinamicamente in pagine da 4 KB solo quando l'applicazione ne fa effettiva richiesta, gestendo i Page Fault hardware in tempo reale. Ogni processo dispone di una Page Table privata, garantendo l'integrità dei dati durante il context-switching eseguito dallo scheduler a 100 Hz. Il sistema gestisce correttamente il passaggio tra Ring tramite il Task State Segment (TSS) per la messa in sicurezza dello stack di emergenza del Kernel.
-* 🗂️ **File System Ext2 e VFS:** Il driver ATA PIO è stato potenziato con il supporto LBA48 per interfacciarsi con dischi di grandi dimensioni. Al Path Parser di base è stato affiancato un Virtual File System (VFS) completo che gestisce l'allocazione dinamica di Blocchi e Inode interrogando le Bitmap dei vari Block Groups. Il traduttore di blocchi supporta nativamente i puntatori Singoli e Doppi Indiretti, abbattendo i limiti di grandezza dei file. Sono stati integrati motori complessi per l'eliminazione sicura dei dati, la distruzione ricorsiva delle directory e un sistema di copia file in streaming ad altissima efficienza (1 KB di RAM utilizzata), blindato da un VFS Lock globale (Spinlock) per prevenire la corruzione dei dati causata da operazioni di I/O concorrenti nello scheduler.
-* 📚 **Libreria Standard e GUI Toolkit (antem_libc):** Le applicazioni in Ring 3 sono supportate da una potente libreria C proprietaria scritta da zero. L'ecosistema è stato arricchito da un C Runtime Bootstrapper (crt0) per l'avvio e la terminazione sicura dei processi, e da un gestore dell'Heap in User Space espanso a 1.8 MB (malloc/free). Il pacchetto include funzioni di formattazione avanzata (printf variadica), un gestore unificato per il File I/O basato su stream (fopen, fread, fwrite con buffering interno) e, soprattutto, un GUI Toolkit nativo (Retained Mode). Quest'ultimo fornisce astrazioni ad alto livello per renderizzare dinamicamente bottoni, caselle di testo interattive, impaginazione del testo e immagini a 32-bit direttamente sul Window Manager tramite l'Interrupt 0x80.
+* 🖥️ **Event-Driven Window Manager and Taskbar:** The graphical interface is rendered in memory via Double-Buffering to guarantee the complete absence of flickering. The system boasts an interactive Start Menu (protected by Z-Ordering logic), a Taskbar with dynamic space management, and 16-color icons. The closing and minimizing animations are driven by an asynchronous engine based on Linear Interpolation (Lerp) hooked into the hardware timer, producing smooth, pixel-perfect trajectories. CPU usage is drastically optimized through a hybrid V-Sync (50/100 FPS) and a smart Scheduler that puts Ring 3 processes to sleep (Syscall Yield), waking up strictly only the application with active focus at the exact moment of user input. Windows also support Content-Aware resizing, adapting their bounds to the internal interface.
+* 🛡️ **Ring 3, Paging, and Demand Paging:** Applications operate in total isolation in User Mode (Ring 3), protected by an advanced virtual memory architecture. The system implements a bitmap-based Physical Frame Allocator (PFA) to manage physical RAM up to 1 GB. Instead of static allocations, the Kernel uses Demand Paging: memory is dynamically mapped in 4 KB pages only when the application actually requests it, handling hardware Page Faults in real time. Each process has its own private Page Table, ensuring data integrity during the context-switching performed by the 100 Hz scheduler. The system correctly handles transitions between Rings via the Task State Segment (TSS) to secure the Kernel's emergency stack.
+* 🗂️ **Ext2 File System and VFS:** The ATA PIO driver has been enhanced with LBA48 support to interface with large disks. Alongside the basic Path Parser, a complete Virtual File System (VFS) has been added that manages the dynamic allocation of Blocks and Inodes by querying the Bitmaps of the various Block Groups. The block translator natively supports Single and Double Indirect pointers, breaking through file size limits. Complex engines have been integrated for secure data deletion, recursive directory destruction, and a highly efficient streaming file-copy system (using just 1 KB of RAM), safeguarded by a global VFS Lock (Spinlock) to prevent data corruption caused by concurrent I/O operations in the scheduler.
+* 📚 **Standard Library and GUI Toolkit (antem_libc):** Ring 3 applications are supported by a powerful proprietary C library written from scratch. The ecosystem has been enriched with a C Runtime Bootstrapper (crt0) for safely starting and terminating processes, and with a User Space Heap manager expanded to 1.8 MB (malloc/free). The package includes advanced formatting functions (variadic printf), a unified stream-based File I/O manager (fopen, fread, fwrite with internal buffering), and, above all, a native GUI Toolkit (Retained Mode). The latter provides high-level abstractions for dynamically rendering buttons, interactive text boxes, text layout, and 32-bit images directly on the Window Manager through Interrupt 0x80.
 
 ---
 
-## 🚀 Guida all'Avvio (Quick Start)
+## 🚀 Getting Started (Quick Start)
 
-Attualmente il sistema è distribuito sotto forma di file binari pronti per essere eseguiti in un emulatore. Si raccomanda **QEMU**.
+The system is currently distributed as binary files ready to run in an emulator. **QEMU** is recommended.
 
-1. Scarica l'archivio `.zip` dall'ultima [Release](https://github.com/511break-AS/Ante-Millennium-OS/releases) disponibile.
-2. Estrai i file.
-3. Apri un terminale nella cartella di estrazione e lancia questo comando (varia in base al sistema operativo utilizzato):
+1. Download the `.zip` archive from the latest available [Release](https://github.com/511break-AS/Ante-Millennium-OS/releases).
+2. Extract the files.
+3. Open a terminal in the extraction folder and run this command (it varies depending on the operating system you are using):
 
 ```bash
 qemu-system-i386 -kernel myos.bin -drive file=disk.img,format=raw,index=0,media=disk -m 512M -device ac97
 ```
 
-> **Nota Tecnica:** Il parametro `-m 512M` è la RAM, `-device ac97` specifica a QEMU riguarda l'audio.
+> **Technical Note:** The `-m 512M` parameter sets the RAM, while `-device ac97` tells QEMU about the audio.
 
 ---
 
-## ⌨️ Comandi Terminale Disponibili
+## ⌨️ Available Terminal Commands
 
-Il Terminale integrato permette di interagire direttamente con il Kernel e il File System. Digita `help` nel terminale per una lista rapida.
+The integrated Terminal lets you interact directly with the Kernel and the File System. Type `help` in the terminal for a quick list.
 
 
-## 👨‍💻 L'Autore
+## 👨‍💻 The Author
 
-Il creatore e sviluppatore principale di Ante-Millennium OS è **Alberto Sanfelice**.
+The creator and lead developer of Ante-Millennium OS is **Alberto Sanfelice**.
 
-Sul web, la sua identità digitale è storicamente legata al numero **511** (da cui deriva l'estensione proprietaria degli eseguibili di sistema, `.edxi`, dove "e" sta per executable, mentre "dxi" è il numero romano 511). 
+On the web, his digital identity is historically tied to the number **511** (from which the proprietary system executable extension, `.edxi`, is derived, where "e" stands for executable, while "dxi" is the Roman numeral 511).
 
-📹 **Canale YouTube Ufficiale:** [511break](https://www.youtube.com/@511break) - *Segui i "dietro le quinte" e lo sviluppo del codice.*
+📹 **Official YouTube Channel:** [511break](https://www.youtube.com/@511break) - *Follow the "behind the scenes" and the code development.*
 
 ---
 
-## ⚖️ Licenza
+## ⚖️ License
 
-Questo progetto è rilasciato sotto la licenza GNU General Public License v2.0.
+This project is released under the GNU General Public License v2.0.
 *Copyright (c) 2026 Alberto Sanfelice (511break).*
 
-> **Disclaimer:** Questo sistema operativo è un progetto sperimentale fornito "COSÌ COM'È", senza alcuna garanzia esplicita o implicita. Per i dettagli completi, leggi il file `LICENSE.TXT` incluso nella release.
+> **Disclaimer:** This operating system is an experimental project provided "AS IS", without any express or implied warranty. For full details, read the `LICENSE.TXT` file included in the release.
