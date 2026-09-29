@@ -1,4 +1,4 @@
-// Ante-Millennium Operating System - antem_stdlib
+// Third-Millennium Operating System - antem_stdlib
 // Copyright (C) 2026  Alberto Sanfelice
 
 // This program is free software; you can redistribute it and/or

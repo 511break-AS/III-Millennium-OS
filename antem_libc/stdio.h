@@ -20,6 +20,7 @@
 
 #ifndef _ANTEM_STDIO_H
 #define _ANTEM_STDIO_H
+#define BUTTON_DEFAULT 0
 #include "stddef.h" 
 
 // --- SISTEMA DI ANCORAGGIO GUI (Griglia a 9 punti) ---
@@ -45,6 +46,31 @@ void load_file(const char* filename, char* dest_buffer, uint32_t* out_size);
 
 // *** AGGIORNATE CON L'ANCORAGGIO ***
 void gui_textbox(int anchor, int x, int y, int w, int h, uint32_t bg, int max_chars, const char* initial_text);
+
+
+// --- AREA DI TESTO MULTILINEA ---
+#define TEXTAREA_MAX      8192   // caratteri per area
+#define TEXTAREA_EDIT     0      // modificabile
+#define TEXTAREA_READONLY 1      // sola lettura: si sfoglia ma non si scrive
+void gui_textarea(int anchor, int x, int y, int w, int h, uint32_t bg, int idx, int readonly);
+void gui_textarea_set(int idx, const char* text);
+void gui_textarea_append(int idx, const char* text);
+void gui_textarea_get(int idx, char* dest, int max);
+
+
+// --- IL ROBOTTINO (accesso all'intelligenza artificiale) ---
+#define ROBOT_ASSENTE 0   // non e' sul vassoio di questa finestra
+#define ROBOT_PRONTO  1   // presente e libero
+#define ROBOT_PENSA   2   // sta elaborando una risposta
+#define ROBOT_ERRORE  3
+int robot_status(void);
+int robot_ask(const char* prompt, int answer_area);
+
+// --- DISPLAY DI VETRO ---
+// Etichetta di sola lettura su una lastra di vetro colorato. Testo allineato a
+// destra; se il display e' alto almeno 48 pixel le cifre sono ingrandite.
+void gui_display(int anchor, int x, int y, int w, int h, uint32_t tint, uint32_t text_color, const char* text);
+
 void gui_text(int anchor, int x, int y, const char* text, uint32_t color);
 void gui_text_bold(int anchor, int x, int y, const char* text, uint32_t color);
 
@@ -78,6 +104,9 @@ int gui_spawn_window(const char* title, int w, int h);
 
 // Imposta la dimensione iniziale e di base personalizzata della finestra corrente
 void gui_set_window_size(int w, int h);
+
+// Imposta la dimensione minima sotto cui l'utente non puo' ridimensionare la finestra
+void gui_set_window_min_size(int w, int h);
 
 int gui_is_window_open(int win_id);
 
@@ -153,5 +182,10 @@ int vfprintf(FILE *stream, const char *format, __builtin_va_list arg);
 int vsnprintf(char *str, size_t size, const char *format, __builtin_va_list arg);
 int sscanf(const char *str, const char *format, ...);
 int remove(const char *pathname);
+
+// --- MENU DELLA BARRA SUPERIORE ---
+#define MENU_MAX_ITEMS 8
+typedef struct { const char* label; void (*cb)(void); } menu_item_t;
+void gui_menu(const char* title, menu_item_t* items, int count);
 
 #endif

@@ -1,4 +1,4 @@
-// Ante-Millennium Operating System - antem_stdio
+// Third-Millennium Operating System - antem_stdio
 // Copyright (C) 2026  Alberto Sanfelice
 
 // This program is free software; you can redistribute it and/or
@@ -17,7 +17,7 @@
 
 
 // antem_libc/stdio.c
-// Implementazione della Standard C Library per Ante-M OS
+// Implementazione della Standard C Library per III-M OS
 
 #include "stdio.h"
 #include "stdlib.h"
@@ -70,6 +70,8 @@ void print(const char* str) {
 // ==========================================
 int antem_ui_mx = -1, antem_ui_my = -1, antem_ui_mclick = 0, antem_ui_mwin = -1, antem_ui_prev_click = 0;
 int antem_ui_needs_redraw = 0; // Segnala se la UI ha cambiato stato
+int antem_menu_idx = 0;       // slot del prossimo gui_menu() del fotogramma
+int antem_menu_action = -1;   // voce di menu scelta, letta una volta per giro
 
 void yield() {
     asm volatile ("int $0x80" : : "a"(6));
@@ -86,10 +88,14 @@ void gui_yield() {
 }
 
 
-// Il motore degli eventi globale
+
 void gui_poll_events() {
     antem_ui_prev_click = antem_ui_mclick; // Salviamo lo storico
     get_mouse_ext(&antem_ui_mx, &antem_ui_my, &antem_ui_mclick, &antem_ui_mwin);
+
+    // Voce di menu scelta dall'utente, se ce n'e' una in attesa
+    asm volatile ("int $0x80" : : "a"(18), "b"(current_gui_window),
+                  "c"((unsigned int)&antem_menu_action));
 }
 
 // Controlla se una finestra è ancora aperta
@@ -216,6 +222,11 @@ void gui_set_window_size(int w, int h) {
     asm volatile ("int $0x80" : : "a"(16), "b"(w), "c"(h), "d"(current_gui_window));
 }
 
+void gui_set_window_min_size(int w, int h) {
+    // Misura sotto la quale l'utente non puo' ridimensionare la finestra
+    asm volatile ("int $0x80" : : "a"(19), "b"(w), "c"(h), "d"(current_gui_window));
+}
+
 void save_file(const char* filename, const char* data, uint32_t size) {
     asm volatile ("int $0x80" : : "a"(4), "b"((unsigned int)filename), "c"((unsigned int)data), "d"(size));
 }
@@ -266,6 +277,7 @@ typedef struct {
 
 
 void gui_clear() {
+    antem_menu_idx = 0;
     gui_el_t el = {0};
     asm volatile ("int $0x80" : : "a"(7), "b"((unsigned int)&el), "c"(current_gui_window));
 }
@@ -363,8 +375,15 @@ void gui_text(int anchor, int x, int y, const char* text, unsigned int color) {
     
     apply_anchor_math(anchor, win_w, win_h, actual_w, 16, &x, &y, &flag_w, &flag_h);
     
-    gui_el_t el; el.type = 3 | flag_w | flag_h; el.x = x; el.y = y; el.c1 = color;
+    // Azzerato: i campi non usati venivano spediti al kernel con spazzatura
+    // di stack, e il ridimensionamento automatico li leggeva come dimensioni.
+    gui_el_t el = {0};
+    el.type = 3 | flag_w | flag_h;
+    el.x = x; el.y = y; el.w = actual_w; el.h = 16; el.c1 = color;
     int i=0; while(text[i] && i<255) { el.text[i] = text[i]; i++; } el.text[i] = '\0';
+
+    
+
     asm volatile ("int $0x80" : : "a"(7), "b"((unsigned int)&el), "c"(current_gui_window));
 }
 
@@ -377,8 +396,11 @@ void gui_text_bold(int anchor, int x, int y, const char* text, uint32_t color) {
     
     apply_anchor_math(anchor, win_w, win_h, actual_w, 16, &x, &y, &flag_w, &flag_h);
     
-    gui_el_t el; el.type = 3 | 0x0400 | flag_w | flag_h; 
-    el.x = x; el.y = y; el.c1 = color;
+    // Azzerato: i campi non usati venivano spediti al kernel con spazzatura
+    // di stack, e il ridimensionamento automatico li leggeva come dimensioni.
+    gui_el_t el = {0};
+    el.type = 3 | 0x0400 | flag_w | flag_h;
+    el.x = x; el.y = y; el.w = actual_w; el.h = 16; el.c1 = color;
     int i=0; while(text[i] && i<255) { el.text[i] = text[i]; i++; } el.text[i] = '\0';
     asm volatile ("int $0x80" : : "a"(7), "b"((unsigned int)&el), "c"(current_gui_window));
 }
@@ -396,6 +418,86 @@ void gui_textbox(int anchor, int x, int y, int w, int h, unsigned int bg, int ma
     el.x = x; el.y = y; el.w = w; el.h = h; 
     el.c1 = bg; el.c2 = (unsigned int)max_chars; 
     int i=0; while(initial_text[i] && i<255) { el.text[i] = initial_text[i]; i++; } el.text[i] = '\0';
+    asm volatile ("int $0x80" : : "a"(7), "b"((unsigned int)&el), "c"(current_gui_window));
+}
+// ==========================================================
+// AREA DI TESTO MULTILINEA
+// Il testo vive nel kernel, non nell'elemento: l'app dichiara l'area a ogni
+// fotogramma con gui_textarea (solo posizione e aspetto) e ne scrive o legge
+// il contenuto solo quando le serve.
+// ==========================================================
+void gui_textarea(int anchor, int x, int y, int w, int h, unsigned int bg, int idx, int readonly) {
+    int win_w = 0, win_h = 0; get_window_size(&win_w, &win_h);
+    int flag_w = 0, flag_h = 0;
+    apply_anchor_math(anchor, win_w, win_h, w, h, &x, &y, &flag_w, &flag_h);
+
+    gui_el_t el = {0};
+    el.type = 6 | flag_w | flag_h;
+    el.x = x; el.y = y; el.w = w; el.h = h;
+    el.c1 = bg;
+    el.c2 = (unsigned int)(idx & 0xFF) | (readonly ? 0x100u : 0u);
+    asm volatile ("int $0x80" : : "a"(7), "b"((unsigned int)&el), "c"(current_gui_window) : "memory");
+}
+
+// Sostituisce tutto il testo dell'area. Non va chiamata a ogni fotogramma:
+// riporterebbe ogni volta il cursore all'inizio.
+void gui_textarea_set(int idx, const char* text) {
+    asm volatile ("int $0x80" : : "a"(20), "b"(idx), "c"((unsigned int)text), "d"(current_gui_window) : "memory");
+}
+
+// Aggiunge testo in fondo e porta la vista all'ultima riga
+void gui_textarea_append(int idx, const char* text) {
+    asm volatile ("int $0x80" : : "a"(22), "b"(idx), "c"((unsigned int)text), "d"(current_gui_window) : "memory");
+}
+
+// Copia il testo dell'area in dest, al massimo max-1 caratteri piu' il terminatore
+void gui_textarea_get(int idx, char* dest, int max) {
+    unsigned int packed = (unsigned int)(idx & 0xFF) | ((unsigned int)max << 8);
+    asm volatile ("int $0x80" : : "a"(21), "b"(packed), "c"((unsigned int)dest), "d"(current_gui_window) : "memory");
+}
+
+// ==========================================================
+// IL ROBOTTINO: ACCESSO ALL'INTELLIGENZA ARTIFICIALE
+// Funziona solo se l'utente ha trascinato il robottino sul vassoio della
+// barra del titolo di questa finestra. Il controllo lo fa il kernel.
+// ==========================================================
+
+// Stato del robottino rispetto a questa finestra (vedi ROBOT_* in stdio.h)
+int robot_status(void) {
+    int st = 0;
+    asm volatile ("int $0x80" : : "a"(23), "b"((unsigned int)&st), "c"(0), "d"(current_gui_window) : "memory");
+    return st;
+}
+
+// Invia una domanda. La risposta viene scritta dal kernel, un pezzo alla
+// volta, nell'area di testo indicata: l'app non deve aspettare nulla.
+// Restituisce 1 se la richiesta e' stata accettata, 0 se il permesso manca.
+int robot_ask(const char* prompt, int answer_area) {
+    int r = answer_area;
+    asm volatile ("int $0x80" : : "a"(24), "b"((unsigned int)prompt), "c"((unsigned int)&r), "d"(current_gui_window) : "memory");
+    return r;
+}
+
+// ==========================================================
+// DISPLAY DI VETRO
+// Etichetta di sola lettura su una lastra di vetro colorato, pensata per
+// calcolatrici, contatori e orologi. Il testo e' allineato a destra; se il
+// display e' alto almeno 48 pixel le cifre vengono ingrandite.
+// tint = colore del vetro, text_color = colore del testo.
+// ==========================================================
+void gui_display(int anchor, int x, int y, int w, int h, unsigned int tint, unsigned int text_color, const char* text) {
+    int win_w = 0, win_h = 0; get_window_size(&win_w, &win_h);
+    int flag_w = 0, flag_h = 0;
+    apply_anchor_math(anchor, win_w, win_h, w, h, &x, &y, &flag_w, &flag_h);
+
+    gui_el_t el = {0};
+    el.type = 7 | flag_w | flag_h;
+    el.x = x; el.y = y; el.w = w; el.h = h;
+    el.c1 = tint;
+    el.c2 = text_color;
+    int i = 0;
+    while (text && text[i] && i < 255) { el.text[i] = text[i]; i++; }
+    el.text[i] = '\0';
     asm volatile ("int $0x80" : : "a"(7), "b"((unsigned int)&el), "c"(current_gui_window));
 }
 
@@ -598,6 +700,46 @@ void audio_play(const char* path) {
 
 void audio_stop() { 
     asm volatile ("int $0x80" : : "a"(12), "b"(0)); 
+}
+
+
+
+// ==========================================================
+// MENU DELLA BARRA SUPERIORE
+// Stesso schema dei bottoni: l'app ridichiara i menu a ogni giro e la
+// libreria richiama da sola il callback della voce scelta.
+// ==========================================================
+
+
+void gui_menu(const char* title, menu_item_t* items, int count) {
+    if (count > MENU_MAX_ITEMS) count = MENU_MAX_ITEMS;
+
+    struct { char title[24]; int item_count; char items[MENU_MAX_ITEMS][32]; } pkt;
+
+    int i = 0;
+    while (title[i] && i < 23) { pkt.title[i] = title[i]; i++; }
+    pkt.title[i] = '\0';
+
+    pkt.item_count = count;
+    for (int k = 0; k < count; k++) {
+        int c = 0;
+        const char* s = items[k].label;
+        while (s && s[c] && c < 31) { pkt.items[k][c] = s[c]; c++; }
+        pkt.items[k][c] = '\0';
+    }
+
+    asm volatile ("int $0x80" : : "a"(17), "b"((unsigned int)&pkt),
+                  "c"(current_gui_window), "d"(antem_menu_idx));
+
+    if (antem_menu_action >= 0 && (antem_menu_action / 100) == antem_menu_idx) {
+        int it = antem_menu_action % 100;
+        antem_menu_action = -1;
+        if (it < count && items[it].cb) {
+            items[it].cb();
+            antem_ui_needs_redraw = 1;
+        }
+    }
+    antem_menu_idx++;
 }
 
 /*
