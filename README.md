@@ -6,20 +6,8 @@
 ![Architecture](https://img.shields.io/badge/arch-x86_32--bit-red.svg)
 ![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
-  <title>Third Millennium OS — Riflesso (proporzioni auree)</title>
-  <rect width="240" height="240" fill="#FFFFFF"/>
-  <g transform="translate(-43.5,40)">
-    <!-- Sole -->
-    <circle cx="190" cy="80" r="34" fill="#4FA6C9"/>
-    <!-- Orizzonte + riflesso (semi-altezze in rapporto aureo: phi^2 : phi : 1) -->
-    <g fill="none" stroke-linecap="round" stroke-width="6">
-      <line x1="148"     y1="31.459" x2="148"     y2="128.541" stroke="#2E86AB" stroke-width="4"/>
-      <line x1="122.043" y1="50"     x2="122.043" y2="110"     stroke="#2E86AB"/>
-      <line x1="106"     y1="61.459" x2="106"     y2="98.541"  stroke="#59AECE"/>
-    </g>
-  </g>
-</svg>
+<img width="240" height="240" alt="logo-third-millennium" src="https://github.com/user-attachments/assets/b093043b-d2cb-44cb-be4c-c2f3fd91b3f9" />
+
 
 
 
