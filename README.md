@@ -1,6 +1,6 @@
 # 💿 Third-Millennium OS (III-Millennium) x86
 
-## V 0.1 Alpha
+## V 0.1 Alpha. (A NEW RELEASE SOON, with real hardware support)
 
 ![Version](https://img.shields.io/badge/version-0.1_Alpha-blue.svg)
 ![Architecture](https://img.shields.io/badge/arch-x86_32--bit-red.svg)
